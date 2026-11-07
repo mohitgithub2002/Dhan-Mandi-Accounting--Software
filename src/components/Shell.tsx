@@ -48,7 +48,7 @@ export function Shell({
   fyLabel: string;
   dayClosed: boolean;
 }) {
-  const { t, tx, lang, can, workingDate } = useI18n();
+  const { t, lang, can, workingDate } = useI18n();
   const pathname = usePathname();
   const router = useRouter();
   const [pending, start] = useTransition();

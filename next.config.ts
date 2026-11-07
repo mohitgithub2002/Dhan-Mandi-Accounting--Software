@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  serverExternalPackages: ["exceljs", "playwright-core"],
+  serverExternalPackages: ["exceljs"],
   experimental: { serverActions: { bodySizeLimit: "2mb" } },
 };
 

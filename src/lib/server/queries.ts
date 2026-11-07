@@ -1,7 +1,8 @@
 import "server-only";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { accounts, backupsLog, commodities } from "@/db/schema";
+import { accounts, backupsLog, commodities, lotSales } from "@/db/schema";
+import { balanceOf } from "./ledger";
 
 export type Commodity = { id: number; code: string; nameHi: string; nameEn: string; weighMode: string; defaultTareKg: string; defaultMoisturePct: string; bagKg: string };
 
@@ -200,7 +201,6 @@ export async function billList(from: string, to: string) {
 
 export async function salesForEdit(ids: number[]) {
   if (!ids.length) return {};
-  const { lotSales } = await import("@/db/schema");
   const rows = await db.select().from(lotSales).where(inArray(lotSales.id, ids));
   return Object.fromEntries(
     rows.map((s) => [
@@ -221,4 +221,53 @@ export async function vouchersFor(from: string, to: string, types?: string[]) {
     WHERE v.date BETWEEN ${from} AND ${to}
       ${types?.length ? sql`AND v.type IN (${sql.join(types.map((t) => sql`${t}`), sql`, `)})` : sql``}
     ORDER BY v.date, v.created_at, v.id`);
+}
+
+export interface LedgerRow {
+  id: number;
+  date: string;
+  voucherId: number;
+  type: string;
+  voucherNo: number;
+  narration: string;
+  docType: string | null;
+  docId: number | null;
+  status: string;
+  debit: string;
+  credit: string;
+  balance: string;
+}
+
+/** Khata: opening, every entry with running balance (naam +), closing (PRD §5.9). */
+export async function ledgerFor(accountId: number, from: string, to: string) {
+  const opening = await balanceOf(db, accountId, { before: from });
+  const rows = await db.execute<{ id: number; date: string; voucher_id: number; type: string; voucher_no: number; narration: string; vnarr: string; doc_type: string | null; doc_id: number | null; status: string; debit: string; credit: string }>(sql`
+    SELECT le.id, le.date::text AS date, v.id AS voucher_id, v.type, v.voucher_no, le.narration, v.narration AS vnarr,
+      v.doc_type, v.doc_id, v.status, le.debit, le.credit
+    FROM ledger_entries le JOIN vouchers v ON v.id = le.voucher_id
+    WHERE le.account_id = ${accountId} AND le.date BETWEEN ${from} AND ${to}
+    ORDER BY le.date, v.created_at, le.id`);
+  let bal = opening;
+  let dr = opening.mul(0);
+  let cr = opening.mul(0);
+  const entries: LedgerRow[] = rows.map((r) => {
+    bal = bal.plus(r.debit).minus(r.credit);
+    dr = dr.plus(r.debit);
+    cr = cr.plus(r.credit);
+    return {
+      id: Number(r.id),
+      date: r.date,
+      voucherId: Number(r.voucher_id),
+      type: r.type,
+      voucherNo: Number(r.voucher_no),
+      narration: r.vnarr || r.narration,
+      docType: r.doc_type,
+      docId: r.doc_id === null ? null : Number(r.doc_id),
+      status: r.status,
+      debit: r.debit,
+      credit: r.credit,
+      balance: bal.toFixed(2),
+    };
+  });
+  return { opening: opening.toFixed(2), entries, closing: bal.toFixed(2), totalDebit: dr.toFixed(2), totalCredit: cr.toFixed(2) };
 }

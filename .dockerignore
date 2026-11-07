@@ -1,0 +1,6 @@
+node_modules
+.next
+backups
+.env
+.git
+*.log

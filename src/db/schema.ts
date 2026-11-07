@@ -513,3 +513,16 @@ export const backupsLog = pgTable("backups_log", {
   source: text("source").notNull().default("manual"), // manual | scheduled
   userId: integer("user_id").references(() => users.id),
 });
+
+/** Mandi shulk returns marked as filed with the samiti (PRD §5.14). */
+export const shulkReturns = pgTable("shulk_returns", {
+  id: serial("id").primaryKey(),
+  periodFrom: date("period_from").notNull(),
+  periodTo: date("period_to").notNull(),
+  challanNo: text("challan_no").notNull(),
+  challanDate: date("challan_date").notNull(),
+  amount: money("amount").notNull().default("0"),
+  remarks: text("remarks").notNull().default(""),
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: createdAt(),
+});

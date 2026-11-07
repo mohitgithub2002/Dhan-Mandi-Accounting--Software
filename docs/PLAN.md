@@ -39,7 +39,7 @@ where the build deliberately differs from the PRD (and why).
 | UI | Tailwind CSS v4, small in-house component set (`src/components/ui.tsx`) |
 | Auth | Signed JWT session cookie (`jose`) + `bcryptjs`; 30-min sliding idle timeout; lock after 5 wrong attempts |
 | i18n | In-house dictionary (`hi`, `en`) + `custom_labels` table overrides |
-| Print | HTML A4 print templates with `@page` CSS and embedded Noto Sans / Noto Sans Devanagari (`@fontsource`) → browser "Save as PDF"; optional server PDF via headless Chromium (`/api/pdf`) |
+| Print | HTML A4 print templates with `@page` CSS and embedded Noto Sans / Noto Sans Devanagari (`@fontsource`) → browser "Save as PDF" (server-side PDF rendering is a later item) |
 | Excel | ExcelJS (`/api/export/[report]`) |
 | Tests | Vitest (calc unit tests + DB integration tests of posting) |
 | Deploy | Docker Compose (app + Postgres + hourly backup sidecar) — PRD option A |
@@ -192,38 +192,53 @@ tests/                     vitest suites
 
 ---
 
-## 5. Work breakdown and status (Phase 1 — season-ready core)
+## 5. Work breakdown and status
+
+### Phase 1 — season-ready core (built)
 
 | # | Work item | PRD | Status |
 | --- | --- | --- | --- |
-| 1 | Repo, tooling, Docker Compose, env | §11 | ✅ |
+| 1 | Repo, tooling, Docker Compose (app + Postgres + backup sidecar) | §11 | ✅ |
 | 2 | Schema + migrations + balance / immutability triggers | §10 | ✅ |
-| 3 | Seed: firm, FY, admin user, groups, system accounts, jins, kharcha presets | §5.1, §6 | ✅ |
+| 3 | Seed: firm, FY, malik user, groups, system accounts, jins, Hanumangarh kharcha presets | §5.1, §6 | ✅ |
 | 4 | Calc module + unit tests (worked example 1,22,475 / 1,27,216; byaj; words) | §6, §12 | ✅ |
-| 5 | Auth, roles, permission matrix, session timeout, lockout | §2, §11 | ✅ |
-| 6 | i18n dictionary, language toggle, shabd overrides | §3, §9 | ✅ |
-| 7 | Masters: party (+byaj rule), jins, kharcha/tax master with rate history, overrides, test calculator | §5.1, §6 | ✅ |
-| 8 | Dheri Entry (aamad + boli + tulai, live panel, Save + Print) | §5.2–5.4, §9 | ✅ |
-| 9 | Aamad list, Boli sheet (with split), Tulai sheet (total / bag-wise) | §5.2–5.4 | ✅ |
-| 10 | Posting service: parchi, bill, radd, edit-with-repost, numbering | §5.5–5.6, §10 | ✅ |
-| 11 | Jama-naam: receipts (+TDS, bill allocation), payments, peshgi, kharcha, contra | §5.7 | ✅ |
-| 12 | Rokad and bank book with physical count | §5.8 | ✅ |
-| 13 | Khata with byaj-sahit toggle and drill-down | §5.9 | ✅ |
-| 14 | Byaj run: preview → post | §5.10 | ✅ |
+| 5 | Auth, roles, permission matrix, 30-min idle timeout, lock after 5 attempts | §2, §11 | ✅ |
+| 6 | Hindi / English dictionary, language toggle per user, shabd overrides | §3, §9 | ✅ |
+| 7 | Masters: party (+ byaj rule, duplicate warning), jins, kharcha/tax master (rate history, overrides, deactivate, hard delete if unused, test calculator) | §5.1, §6 | ✅ |
+| 8 | Dheri Entry (aamad + boli + tulai, live panel, keyboard-only, Save + Print) | §5.2–5.4, §9 | ✅ |
+| 9 | Aamad list, Boli sheet (split, bhav warning), Tulai sheet (total / bag-wise) | §5.2–5.4 | ✅ |
+| 10 | Posting: parchi, bill, radd, edit-with-repost, peshgi recovered, gapless numbering | §5.5–5.6, §10 | ✅ |
+| 11 | Jama-naam: receipts (+TDS, bill allocation), payments, peshgi, kharcha, contra, raseed | §5.7 | ✅ |
+| 12 | Rokad and bank book with physical count | §5.8 | ✅ (bank statement import is P1 — not built) |
+| 13 | Khata with byaj-sahit toggle and drill-down, A4 print | §5.9 | ✅ (WhatsApp share is P1 — not built) |
+| 14 | Byaj run: preview → post, simple / monthly / compound, grace & credit days | §5.10 | ✅ |
 | 15 | Nakal and din band / reopen | §5.13 | ✅ |
-| 16 | Reports (P0 list) + Excel export + print | §7 | ✅ |
-| 17 | A4 prints: parchi (full / half), bill, raseed, khata; Original / Nakal | §8 | ✅ |
-| 18 | Settings: firm, number series view, users, shabd, backup | §9 | ✅ |
-| 19 | Audit log for edits, radd, rate changes, reopen | §2, §12 | ✅ |
+| 16 | Reports + Excel export + A4 print with running page totals | §7 | ✅ |
+| 17 | A4 prints: parchi (full / half), bill, raseed, khata, registers; Original / Nakal | §8 | ✅ via browser print / Save as PDF |
+| 18 | Settings: firm, number series view, users, shabd, backup, FY lock | §9 | ✅ |
+| 19 | Audit log for edits, radd, rate changes, reopen, prints | §2, §12 | ✅ |
 
-### Phase 2 / 3 (not yet built)
+### Phase 2 items already included
 
-Kisan hisab and carry-forward, full sarkari kharid report, TDS/26AS import and
-milan, trial balance / P&L / balance sheet, year-end close, bank statement
-import, phone view, SMS/WhatsApp, template editor, e-NAM export, running page
-totals on long register prints, Tally export.
+Mandi shulk register with "mark return filed" (challan no. and date), kharcha-wise
+report, TDS register, trial balance, financial-year lock/unlock, basic sarkari kharid
+(agency as buyer, ₹/qtl arhat, `sarkari_credit_kisan` setting).
 
----
+### Not built yet (Phase 2 / 3)
+
+Kisan hisab and carry-forward, sarkari kharid agency report, 26AS import and milan,
+P&L and balance sheet, year-end carry-forward, bank statement import, malik phone
+view, SMS/WhatsApp, template editor, e-NAM export, Tally export, server-side PDF
+rendering (`/api/pdf` with headless Chromium — prints currently use the browser's
+"Save as PDF", which embeds the same fonts), pg-boss job queue.
+
+### Known limitations to review with the firm
+
+- Opening balances are a field on the party (included in every balance), not an
+  opening voucher; the trial balance includes them.
+- Arhat and mandi-shulk reports split a bill's charges across its jins lines in
+  proportion to each line's amount.
+- Report prints paginate at a fixed 26 rows per page; very long text cells can wrap.
 
 ## 6. Testing strategy
 
