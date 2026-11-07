@@ -1,0 +1,61 @@
+# Option A (PRD §11): one shop PC runs everything; other PCs / tablets open http://<shop-pc-ip>:3000
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mandi_khata
+      POSTGRES_USER: mandi
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mandi -d mandi_khata"]
+      interval: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://mandi:${DB_PASSWORD}@db:5432/mandi_khata
+      AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET in .env}
+      BACKUP_DIR: /backups
+      BACKUP_PASSPHRASE: ${BACKUP_PASSPHRASE:-}
+      SEED_ADMIN_MOBILE: ${SEED_ADMIN_MOBILE:-9999999999}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-change-me}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backups:/backups
+
+  # Hourly backups 08:00–21:00 and one at 23:30 (IST); keeps 30 daily + 12 monthly copies.
+  backup:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://mandi:${DB_PASSWORD}@db:5432/mandi_khata
+      BACKUP_DIR: /backups
+      BACKUP_PASSPHRASE: ${BACKUP_PASSPHRASE:-}
+      TZ: Asia/Kolkata
+    volumes:
+      - ./backups:/backups
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        while true; do
+          H=$$(date +%H); M=$$(date +%M)
+          if { [ "$$H" -ge 8 ] && [ "$$H" -le 21 ] && [ "$$M" = "00" ]; } || { [ "$$H" = "23" ] && [ "$$M" = "30" ]; }; then
+            bash scripts/backup.sh || echo "backup failed"
+          fi
+          sleep 60
+        done
+
+volumes:
+  pgdata:
