@@ -1,0 +1,114 @@
+/* A4 portrait print (PRD §8). Fonts are embedded via @fontsource. */
+@page {
+  size: A4 portrait;
+  margin: 10mm 10mm 14mm 10mm;
+  @bottom-right {
+    content: "Page " counter(page) " / " counter(pages);
+    font-size: 9pt;
+    color: #444;
+  }
+}
+
+.print-root {
+  background: #e5e7eb;
+  min-height: 100vh;
+  padding: 16px 0;
+  color: #000;
+  font-size: 11pt;
+}
+.sheet {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto 16px;
+  padding: 10mm;
+  background: white;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
+  position: relative;
+}
+.sheet.half {
+  min-height: 148mm;
+  height: 148mm;
+  overflow: hidden;
+  padding: 7mm 10mm;
+  font-size: 9.5pt;
+}
+.sheet.auto {
+  min-height: 0;
+}
+.pt {
+  width: 100%;
+  border-collapse: collapse;
+  overflow-wrap: anywhere;
+}
+.pt th,
+.pt td {
+  border: 1px solid #555;
+  padding: 3px 5px;
+  vertical-align: top;
+}
+.pt th {
+  background: #f1f1f1;
+  font-weight: 600;
+  text-align: left;
+}
+.pt .r {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pt tfoot td {
+  font-weight: 700;
+}
+.mark {
+  position: absolute;
+  top: 8mm;
+  right: 10mm;
+  border: 2px solid #000;
+  padding: 2px 8px;
+  font-weight: 700;
+}
+.radd-stamp {
+  position: absolute;
+  top: 40%;
+  left: 15%;
+  transform: rotate(-20deg);
+  font-size: 48pt;
+  font-weight: 800;
+  color: rgba(185, 28, 28, 0.35);
+  border: 6px solid rgba(185, 28, 28, 0.35);
+  padding: 4px 24px;
+  pointer-events: none;
+}
+.cut-line {
+  border-top: 1px dashed #888;
+  margin: 0;
+}
+
+@media print {
+  .print-root {
+    background: none;
+    padding: 0;
+  }
+  .sheet {
+    width: auto;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+    break-after: page;
+  }
+  .sheet.half {
+    height: 133mm;
+    break-after: auto;
+  }
+  .sheet.half.second {
+    break-after: page;
+  }
+  .sheet:last-child {
+    break-after: auto;
+  }
+  .toolbar {
+    display: none !important;
+  }
+}
